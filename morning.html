@@ -1,0 +1,407 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>朝ごはんプランナー</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+    const { useState } = React;
+
+    // === lucide-react 互換インライン SVG アイコン ===
+    const Trash2 = ({ size = 24, className = "" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M3 6h18" />
+        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+        <line x1="10" x2="10" y1="11" y2="17" />
+        <line x1="14" x2="14" y1="11" y2="17" />
+      </svg>
+    );
+
+    const CheckCircle2 = ({ size = 24, className = "" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="12" cy="12" r="10" />
+        <path d="m9 12 2 2 4-4" />
+      </svg>
+    );
+
+    const Circle = ({ size = 24, className = "" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <circle cx="12" cy="12" r="10" />
+      </svg>
+    );
+
+    // === データ定義 ===
+    const CATEGORIES = {
+      staple: { id: 'staple', name: '主食', reading: 'しゅしょく', desc: 'エネルギーのもとになる', color: 'yellow', bg: 'bg-yellow-50', border: 'border-yellow-400', headerBg: 'bg-yellow-100', dot: '🟡' },
+      main: { id: 'main', name: '主菜', reading: 'しゅさい', desc: '体をつくるもとになる', color: 'red', bg: 'bg-red-50', border: 'border-red-400', headerBg: 'bg-red-100', dot: '🔴' },
+      side: { id: 'side', name: '副菜', reading: 'ふくさい', desc: '体の調子をととのえる', color: 'green', bg: 'bg-green-50', border: 'border-green-400', headerBg: 'bg-green-100', dot: '🟢' },
+      soup: { id: 'soup', name: '汁物', reading: 'しるもの', desc: 'うす味を心がけよう', color: 'blue', bg: 'bg-blue-50', border: 'border-blue-400', headerBg: 'bg-blue-100', dot: '🔵' },
+      dairy_fruit: { id: 'dairy_fruit', name: '乳製品・くだもの', reading: '', desc: '不足しがちな栄養を補う', color: 'purple', bg: 'bg-purple-50', border: 'border-purple-400', headerBg: 'bg-purple-100', dot: '🟣' }
+    };
+
+    const MENU_ITEMS = {
+      staple: [
+        { id: 's1', name: 'ごはん', emoji: '🍚' }, { id: 's2', name: '食パン', emoji: '🍞' },
+        { id: 's3', name: 'ロールパン', emoji: '🥖' }, { id: 's4', name: 'クロワッサン', emoji: '🥐' },
+        { id: 's5', name: 'おにぎり(うめ)', emoji: '🍙' }, { id: 's6', name: 'おにぎり(さけ)', emoji: '🍙' },
+        { id: 's7', name: 'おにぎり(こんぶ)', emoji: '🍙' }, { id: 's8', name: 'フレンチトースト', emoji: '🥪' },
+        { id: 's9', name: 'ホットケーキ', emoji: '🥞' }, { id: 's10', name: 'コーンフレーク', emoji: '🥣' },
+        { id: 's11', name: 'シリアル', emoji: '🥣' }, { id: 's12', name: 'うどん', emoji: '🍜' },
+        { id: 's13', name: 'トースト(ジャム)', emoji: '🍞' }, { id: 's14', name: 'トースト(バター)', emoji: '🍞' },
+      ],
+      main: [
+        { id: 'm1', name: '焼き魚(さけ)', emoji: '🐟' }, { id: 'm2', name: '焼き魚(さば)', emoji: '🐟' },
+        { id: 'm3', name: '卵焼き', emoji: '🍳' }, { id: 'm4', name: '目玉焼き', emoji: '🍳' },
+        { id: 'm5', name: 'スクランブルエッグ', emoji: '🥚' }, { id: 'm6', name: 'ウインナー', emoji: '🌭' },
+        { id: 'm7', name: 'ハム', emoji: '🥓' }, { id: 'm8', name: 'ベーコン', emoji: '🥓' },
+        { id: 'm9', name: '納豆', emoji: '🫘' }, { id: 'm10', name: '豆腐', emoji: '🧊' },
+        { id: 'm11', name: 'ツナ', emoji: '🐟' }, { id: 'm12', name: 'チキンソテー', emoji: '🍗' },
+        { id: 'm13', name: 'ハンバーグ(小)', emoji: '🧆' }, { id: 'm14', name: 'チーズ', emoji: '🧀' },
+        { id: 'm15', name: 'チーズオムレツ', emoji: '🍳' },
+      ],
+      side: [
+        { id: 'v1', name: 'サラダ(レタス)', emoji: '🥗' }, { id: 'v2', name: 'トマト', emoji: '🍅' },
+        { id: 'v3', name: 'きゅうり', emoji: '🥒' }, { id: 'v4', name: 'ブロッコリー', emoji: '🥦' },
+        { id: 'v5', name: 'ほうれん草のおひたし', emoji: '🥬' }, { id: 'v6', name: 'キャベツ(せん切り)', emoji: '🥗' },
+        { id: 'v7', name: 'にんじん(サラダ)', emoji: '🥕' }, { id: 'v8', name: 'コーン', emoji: '🌽' },
+        { id: 'v9', name: 'ポテトサラダ', emoji: '🥔' }, { id: 'v10', name: '野菜炒め', emoji: '🥘' },
+        { id: 'v11', name: 'ミックスサラダ', emoji: '🥗' },
+      ],
+      soup: [
+        { id: 'sp1', name: '味噌汁', emoji: '🥣' }, { id: 'sp2', name: 'コンソメスープ', emoji: '🍵' },
+        { id: 'sp3', name: '野菜スープ', emoji: '🍲' }, { id: 'sp4', name: 'コーンスープ', emoji: '🥣' },
+      ],
+      dairy_fruit: [
+        { id: 'df1', name: '牛乳', emoji: '🥛' }, { id: 'df2', name: 'ヨーグルト', emoji: '🥣' },
+        { id: 'df3', name: 'チーズ', emoji: '🧀' }, { id: 'df4', name: 'バナナ', emoji: '🍌' },
+        { id: 'df5', name: 'りんご', emoji: '🍎' }, { id: 'df6', name: 'みかん', emoji: '🍊' },
+        { id: 'df7', name: 'いちご', emoji: '🍓' }, { id: 'df8', name: 'オレンジジュース', emoji: '🧃' },
+      ]
+    };
+
+    function BreakfastPlanner() {
+      const [selectedItems, setSelectedItems] = useState({
+        staple: [], main: [], side: [], soup: [], dairy_fruit: []
+      });
+      const [reflections, setReflections] = useState({ q1: '', q2: '', q3: '' });
+      const [showConfirmReset, setShowConfirmReset] = useState(false);
+
+      // === ドラッグ＆ドロップ処理 ===
+      const handleDragStart = (e, item, categoryId) => {
+        e.dataTransfer.setData('application/json', JSON.stringify({ ...item, categoryId }));
+      };
+
+      const handleDrop = (e, targetCategoryId) => {
+        e.preventDefault();
+        try {
+          const data = JSON.parse(e.dataTransfer.getData('application/json'));
+          addItem(data, targetCategoryId);
+        } catch (err) {
+          console.error('Drop error:', err);
+        }
+      };
+
+      const handleDragOver = (e) => {
+        e.preventDefault();
+      };
+
+      // === アイテム操作 ===
+      const addItem = (item, targetCategoryId = null) => {
+        const category = targetCategoryId || item.categoryId;
+        setSelectedItems(prev => ({
+          ...prev,
+          [category]: [...prev[category], { ...item, uniqueId: Date.now() + Math.random().toString() }]
+        }));
+      };
+
+      const removeItem = (category, uniqueId) => {
+        setSelectedItems(prev => ({
+          ...prev,
+          [category]: prev[category].filter(i => i.uniqueId !== uniqueId)
+        }));
+      };
+
+      const clearAll = () => {
+        setSelectedItems({ staple: [], main: [], side: [], soup: [], dairy_fruit: [] });
+        setReflections({ q1: '', q2: '', q3: '' });
+        setShowConfirmReset(false);
+      };
+
+      // === 状態判定 ===
+      const checks = {
+        staple: selectedItems.staple.length > 0,
+        main: selectedItems.main.length > 0,
+        side: selectedItems.side.length > 0,
+        soup: selectedItems.soup.length > 0,
+        dairy_fruit: selectedItems.dairy_fruit.length > 0,
+      };
+
+      const has3Colors = checks.staple && checks.main && checks.side;
+      const isPerfect = has3Colors && checks.soup && checks.dairy_fruit;
+
+      return (
+        <div className="min-h-screen bg-orange-50 font-sans text-gray-800 p-4 sm:p-8">
+          <div className="max-w-6xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border-4 border-orange-200">
+
+            {/* === ヘッダー部 === */}
+            <header className="bg-orange-100 p-6 flex flex-col md:flex-row justify-between items-center border-b-4 border-orange-200 print:bg-white print:border-b-2">
+              <div className="flex items-center gap-4 mb-4 md:mb-0">
+                <span className="text-5xl">☀️</span>
+                <div>
+                  <h1 className="text-3xl sm:text-4xl font-extrabold text-orange-600 tracking-tight">
+                    今日の<span className="text-red-600">朝ごはん</span>をつくろう！
+                  </h1>
+                  <p className="text-lg text-orange-800 font-semibold mt-1">えいようバランスのよい食事を考えよう</p>
+                </div>
+              </div>
+
+              <div className="flex gap-2 print:hidden">
+                <button onClick={() => setShowConfirmReset(true)} className="flex items-center gap-1 bg-white hover:bg-gray-100 text-gray-700 px-4 py-2 rounded-full font-bold shadow transition">
+                  <Trash2 size={18} /> やりなおす
+                </button>
+              </div>
+            </header>
+
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+                {/* === 左カラム：作り方・ポイント === */}
+                <div className="lg:col-span-1 space-y-4 print:hidden">
+                  <div className="bg-green-50 border-2 border-green-300 rounded-2xl p-4">
+                    <div className="bg-green-400 text-white text-center font-bold rounded-full py-1 mb-3 w-3/4 mx-auto shadow-sm">
+                      つくりかた
+                    </div>
+                    <ol className="text-sm space-y-2 font-medium">
+                      <li className="flex gap-2"><span>①</span><span>下のメニューから選ぶ</span></li>
+                      <li className="flex gap-2"><span>②</span><span>クリックかドラッグで並べる</span></li>
+                      <li className="flex gap-2"><span>③</span><span>バランスチェックを見る</span></li>
+                    </ol>
+                  </div>
+                </div>
+
+                {/* === 中央カラム：配置エリア === */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    {['staple', 'main', 'side'].map(catKey => {
+                      const cat = CATEGORIES[catKey];
+                      return (
+                        <div
+                          key={catKey}
+                          className={`border-4 border-dashed rounded-2xl flex flex-col ${cat.bg} ${cat.border} transition-colors min-h-[200px]`}
+                          onDrop={(e) => handleDrop(e, catKey)}
+                          onDragOver={handleDragOver}
+                        >
+                          <div className={`${cat.headerBg} p-2 text-center rounded-t-xl border-b-2 ${cat.border}`}>
+                            <div className="font-bold text-lg flex items-center justify-center gap-1">
+                              {cat.dot} {cat.name}
+                            </div>
+                            <div className="text-[10px] sm:text-xs mt-1 text-gray-700 font-medium">{cat.desc}</div>
+                          </div>
+                          <div className="flex-1 p-2 flex flex-wrap content-start gap-2 overflow-y-auto">
+                            {selectedItems[catKey].map(item => (
+                              <div
+                                key={item.uniqueId}
+                                onClick={() => removeItem(catKey, item.uniqueId)}
+                                className="bg-white px-2 py-2 rounded-xl shadow-sm border border-gray-200 flex flex-col items-center gap-1 cursor-pointer hover:bg-red-50 hover:border-red-300 transition group relative"
+                              >
+                                <span className="text-3xl">{item.emoji}</span>
+                                <span className="text-[10px] font-bold whitespace-nowrap">{item.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    {['soup', 'dairy_fruit'].map(catKey => {
+                      const cat = CATEGORIES[catKey];
+                      return (
+                        <div
+                          key={catKey}
+                          className={`border-4 border-dashed rounded-2xl flex flex-col ${cat.bg} ${cat.border} transition-colors min-h-[140px]`}
+                          onDrop={(e) => handleDrop(e, catKey)}
+                          onDragOver={handleDragOver}
+                        >
+                          <div className={`${cat.headerBg} p-2 text-center rounded-t-xl border-b-2 ${cat.border} flex justify-center items-center gap-2`}>
+                            <span className="text-2xl">{catKey === 'soup' ? '🥣' : '🥛'}</span>
+                            <div className="font-bold flex items-center justify-center gap-1">{cat.dot} {cat.name}</div>
+                          </div>
+                          <div className="flex-1 p-2 flex flex-wrap content-start gap-2">
+                            {selectedItems[catKey].map(item => (
+                              <div
+                                key={item.uniqueId}
+                                onClick={() => removeItem(catKey, item.uniqueId)}
+                                className="bg-white px-2 py-2 rounded-xl shadow-sm border border-gray-200 flex flex-col items-center gap-1 cursor-pointer hover:bg-red-50 transition group relative"
+                              >
+                                <span className="text-2xl">{item.emoji}</span>
+                                <span className="text-[10px] font-bold whitespace-nowrap">{item.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* === 右カラム：バランスチェック === */}
+                <div className="lg:col-span-1 space-y-4">
+                  <div className="bg-teal-50 border-2 border-teal-300 rounded-2xl overflow-hidden">
+                    <div className="bg-teal-500 text-white text-center font-bold py-2 tracking-widest">
+                      バランスチェック
+                    </div>
+                    <div className="p-4 space-y-3">
+                      {[
+                        { key: 'staple', label: '主食', dot: '🟡' },
+                        { key: 'main', label: '主菜', dot: '🔴' },
+                        { key: 'side', label: '副菜', dot: '🟢' },
+                        { key: 'soup', label: '汁物', dot: '🔵' },
+                        { key: 'dairy_fruit', label: '乳製品', dot: '🟣' }
+                      ].map(item => (
+                        <div key={item.key} className="flex items-center justify-between bg-white p-2 rounded-lg border border-teal-100 shadow-sm">
+                          <div className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                            {item.dot} <span>{item.label}</span>
+                          </div>
+                          <div className="text-teal-500">
+                            {checks[item.key] ? <CheckCircle2 size={24} className="fill-teal-100" /> : <Circle size={24} className="text-gray-300" />}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-red-50 border-2 border-red-200 rounded-2xl overflow-hidden text-center">
+                    <div className="bg-red-100 text-red-800 font-bold py-2">判定ステータス</div>
+                    <div className="p-4 bg-white h-20 flex items-center justify-center font-bold">
+                      {isPerfect ? '🌟 パーフェクト！' : has3Colors ? '👍 3色バッチリ！' : '🚩 あとすこし！'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* === 下部：アイテムリスト（ドラッグ元） === */}
+              <div className="mt-8 print:hidden">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {['staple', 'main', 'side'].map(catKey => {
+                    const cat = CATEGORIES[catKey];
+                    return (
+                      <div key={catKey} className={`border-2 rounded-xl overflow-hidden ${cat.border} bg-white flex flex-col`}>
+                        <div className={`${cat.headerBg} text-center font-bold py-1 border-b ${cat.border}`}>
+                          {cat.dot} {cat.name}
+                        </div>
+                        <div className="p-2 grid grid-cols-3 gap-2 bg-gray-50 flex-1 content-start max-h-[250px] overflow-y-auto">
+                          {MENU_ITEMS[catKey].map(item => (
+                            <div
+                              key={item.id}
+                              draggable
+                              onDragStart={(e) => handleDragStart(e, { ...item, categoryId: catKey }, catKey)}
+                              onClick={() => addItem({ ...item, categoryId: catKey })}
+                              className="bg-white border border-gray-200 rounded-lg p-2 flex flex-col items-center justify-center cursor-pointer hover:shadow-md transition-all active:scale-90"
+                            >
+                              <span className="text-2xl mb-1">{item.emoji}</span>
+                              <span className="text-[10px] font-bold text-center leading-tight">{item.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div className="flex flex-col gap-4">
+                    {['soup', 'dairy_fruit'].map(catKey => {
+                      const cat = CATEGORIES[catKey];
+                      return (
+                        <div key={catKey} className={`border-2 rounded-xl overflow-hidden ${cat.border} bg-white flex-1 flex flex-col`}>
+                          <div className={`${cat.headerBg} text-center font-bold py-1 border-b ${cat.border}`}>
+                            {cat.name}
+                          </div>
+                          <div className="p-2 grid grid-cols-3 gap-2 bg-gray-50 flex-1 content-start max-h-[120px] overflow-y-auto">
+                            {MENU_ITEMS[catKey].map(item => (
+                              <div
+                                key={item.id}
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, { ...item, categoryId: catKey }, catKey)}
+                                onClick={() => addItem({ ...item, categoryId: catKey })}
+                                className="bg-white border border-gray-200 rounded-lg p-1 flex flex-col items-center justify-center cursor-pointer hover:shadow-md transition-all active:scale-90"
+                              >
+                                <span className="text-xl mb-1">{item.emoji}</span>
+                                <span className="text-[8px] font-bold text-center leading-tight">{item.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* === ふりかえりエリア === */}
+              <div className="mt-8 bg-yellow-100 border-2 border-yellow-300 rounded-2xl p-6 space-y-4">
+                <h3 className="font-bold text-yellow-800 text-lg flex items-center gap-2">✍️ 今日の学習のふりかえり</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700">今日のメニューでいいと思ったところは？</label>
+                    <textarea
+                      className="w-full rounded-xl border border-gray-300 p-3 h-24 focus:ring-2 focus:ring-yellow-400 outline-none"
+                      value={reflections.q1}
+                      onChange={e => setReflections({...reflections, q1: e.target.value})}
+                      placeholder="考えたことを書こう"
+                    ></textarea>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-gray-700">明日から、どんな朝ごはんにしたい？</label>
+                    <textarea
+                      className="w-full rounded-xl border border-gray-300 p-3 h-24 focus:ring-2 focus:ring-yellow-400 outline-none"
+                      value={reflections.q2}
+                      onChange={e => setReflections({...reflections, q2: e.target.value})}
+                      placeholder="やってみたいことを書こう"
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* === リセット確認モーダル === */}
+          {showConfirmReset && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-200">
+                <h3 className="text-xl font-bold text-gray-800 mb-2">やりなおしますか？</h3>
+                <p className="text-gray-600 mb-6">ならべたメニューとふりかえりがすべて消えます。</p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setShowConfirmReset(false)}
+                    className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold transition"
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    onClick={clearAll}
+                    className="px-4 py-2 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold transition flex items-center gap-1"
+                  >
+                    <Trash2 size={18} /> 消す
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<BreakfastPlanner />);
+  </script>
+</body>
+</html>
